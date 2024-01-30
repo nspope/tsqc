@@ -2,7 +2,20 @@ import bokeh.models as bkm
 import holoviews as hv
 import panel as pn
 
+import numpy as np
+
 from .. import config
+
+def get_connected_edges(edges_parent, edges_child, node_id):
+    is_parent = edges_parent == node_id
+    is_child = edges_child == node_id
+    children = edges_child[is_parent]
+    parents = edges_parent[is_child]
+    idx_one = np.flatnonzero(is_parent)
+    col_one = np.zeros(idx_one.size, dtype=int)
+    idx_two = np.flatnonzero(is_child)
+    col_two = np.ones(idx_two.size, dtype=int)
+    return np.concatenate((idx_one, idx_two)), np.concatenate((col_one, col_two))
 
 
 def page(tsm):
@@ -14,11 +27,14 @@ def page(tsm):
 
     def plot_data(node_id):
         if len(node_id) > 0:
-            filtered_df = edges_df[edges_df["child"] == int(node_id)]
+            edges, degree = get_connected_edges(edges_df["parent"], edges_df["child"], int(node_id))
+            filtered_df = edges_df.iloc[edges].copy()
+            filtered_df["degree"] = degree
+            #filtered_df = edges_df[edges_df["child"] == int(node_id)]
             segments = hv.Segments(
                 filtered_df,
                 kdims=["left", "parent_time", "right", "parent_time_right"],
-                vdims=["child", "parent", "span", "branch_length"],
+                vdims=["child", "parent", "span", "branch_length", "degree"],
             )
             hover_tool = bkm.HoverTool(
                 tooltips=[
@@ -26,6 +42,7 @@ def page(tsm):
                     ("parent", "@parent"),
                     ("span", "@span"),
                     ("branch_length", "@branch_length"),
+                    ("num_mutations", "@num_mutations"),
                 ]
             )
             segments = segments.opts(
@@ -34,6 +51,8 @@ def page(tsm):
                 tools=[hover_tool],
                 xlabel="Position",
                 ylabel="Time",
+                color=hv.dim("degree"),
+                cmap="bkr",
             )
 
             filtered_df = filtered_df.drop(columns=["parent_time_right"])

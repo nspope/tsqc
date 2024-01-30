@@ -397,7 +397,7 @@ class TSModel:
         )
 
     @cached_property
-    @disk_cache("v1")
+    @disk_cache("v2")
     def edges_df(self):
         ts = self.ts
         left = ts.edges_left
@@ -416,6 +416,10 @@ class TSModel:
         child_flags = nodes_flags[edges_child]
         parent_utime = nodes_utime[edges_parent] 
         child_utime = nodes_utime[edges_child]
+        num_mutations = np.zeros(ts.num_edges, dtype=int)
+        for m in ts.mutations():
+            if m.edge != tskit.NULL:
+                num_mutations[m.edge] += 1
 
         df = pd.DataFrame(
             {
@@ -431,6 +435,7 @@ class TSModel:
                 "parent_utime": parent_utime,
                 "child_flags": child_flags,
                 "child_utime": child_utime,
+                "num_mutations": num_mutations,
             }
         )
 
@@ -449,6 +454,7 @@ class TSModel:
                 "parent_flags": "int",
                 "child_utime": "float64",
                 "child_flags": "int",
+                "num_mutations": "int",
             }
         )
 
