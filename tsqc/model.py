@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 import tskit
 
+import json
+
 from .cache import disk_cache
 
 
@@ -408,6 +410,13 @@ class TSModel:
         branch_length = parent_time - child_time
         span = right - left
 
+        nodes_utime = np.array([json.loads(n.metadata or '{"mn":0}')['mn'] for n in ts.nodes()])
+        nodes_flags = ts.nodes_flags
+        parent_flags = nodes_flags[edges_parent]
+        child_flags = nodes_flags[edges_child]
+        parent_utime = nodes_utime[edges_parent] 
+        child_utime = nodes_utime[edges_child]
+
         df = pd.DataFrame(
             {
                 "left": left,
@@ -418,6 +427,10 @@ class TSModel:
                 "child_time": child_time,
                 "branch_length": branch_length,
                 "span": span,
+                "parent_flags": parent_flags,
+                "parent_utime": parent_utime,
+                "child_flags": child_flags,
+                "child_utime": child_utime,
             }
         )
 
@@ -432,6 +445,10 @@ class TSModel:
                 "child_time": "float64",
                 "branch_length": "float64",
                 "span": "float64",
+                "parent_utime": "float64",
+                "parent_flags": "int",
+                "child_utime": "float64",
+                "child_flags": "int",
             }
         )
 
